@@ -10,7 +10,7 @@ namespace ZKit\Console {
     require 'Log.console.php';
     use ZKit\Console\LogConsole;
     
-    define('ZPHAR_VERSION', '1.0');
+    define('ZPHAR_VERSION', '1.0.1');
 
     class PharPackage {
 
@@ -59,13 +59,13 @@ namespace ZKit\Console {
             }
         }
 
-        private function info($cmd){
-            $this->console->info("Usage: php {$cmd} [options]");
+        private function info(){
+            $this->console->info("Usage: php zphar.phar [options]");
             $this->console->info("options:");
-            $this->console->info("  -dir        The full or relative path to the directory");
-            $this->console->info("  -name       It can be full or relative package path( suggest that it ends with .phar)");
-            $this->console->info("  -default    The file path handler to be used as the executable stub for this phar archive.");
-            $this->console->info("  -compress   [Optional]gz or bz2 or none, default is bz2");
+            $this->console->info("  --dir        The full or relative path to the directory");
+            $this->console->info("  --name       It can be full or relative package path( suggest that it ends with .phar)");
+            $this->console->info("  --default    The file path handler to be used as the executable stub for this phar archive.");
+            $this->console->info("  --compress   [Optional]gz or bz2 or none, default is bz2");
             return -1;
         }
 
@@ -128,9 +128,8 @@ namespace ZKit\Console {
         }
 
         private function parseArgs($argv = array()) {
-            $self = array_shift($argv);
+            array_shift($argv);
             if (empty($argv[0])) {
-                $this->info($self);
                 $this->error(1);
             }
             $key = null;
@@ -166,6 +165,8 @@ namespace ZKit\Console {
                 $errCode = -1;
             }
             $this->console->error($errs[$errCode] . $additional);
+
+            $this->info();
             exit($errCode);
         }
 
