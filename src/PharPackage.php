@@ -6,22 +6,24 @@
  * @author Peter (peter.ziv@hotmail.com)
  * @date Oct 12, 2016
  */
-namespace ZKit\Console {
-    require 'Log.console.php';
-    use ZKit\Console\LogConsole;
-    
+
+namespace ZKit\console\zphar {
+    require_once __DIR__ . '/utility/CmdParser.php';
+
     define('ZPHAR_VERSION', '1.0.1');
 
     class PharPackage {
 
         private $console = null;
 
-        public function __construct() {
-            $this->console = new LogConsole;
+        public function __construct()
+        {
+            $this->console = new \ZKit\console\utility\LogConsole;
             $this->console->setDateShow(false);
         }
 
-        private function package($dir, $packageName, $compress, $default) {
+        private function package($dir, $packageName, $compress, $default)
+        {
             try {
                 $phar = new \Phar($packageName);
                 $phar->buildFromDirectory($dir);
@@ -34,7 +36,8 @@ namespace ZKit\Console {
             $this->console->info('Packaged ' . $dir . ' as ' . $packageName);
         }
 
-        private function getCompress($org) {
+        private function getCompress($org)
+        {
             $compress = \Phar::BZ2;
             switch ($org) {
                 case 'gz':
@@ -49,18 +52,20 @@ namespace ZKit\Console {
             return $compress;
         }
 
-        private function check() {
-            if ('cli' !== PHP_SAPI) {
-                $this->error(3);
-            }
-
+        /**
+         * Running environment check
+         */
+        private function check()
+        {
             if (false === \Phar::canWrite()) {
                 $this->error(4);
             }
         }
 
-        private function info(){
-            $this->console->info("Usage: php zphar.phar [options]");
+        private function help()
+        {
+            $this->console->info("ZPHAR " . ZPHAR_VERSION);
+            $this->console->info('Usage: php zphar-' . ZPHAR_VERSION . '.phar [options]');
             $this->console->info("options:");
             $this->console->info("  --dir        The full or relative path to the directory");
             $this->console->info("  --name       It can be full or relative package path( suggest that it ends with .phar)");
@@ -74,29 +79,45 @@ namespace ZKit\Console {
          * @param array $argv the array for the input arguments, it is the argv (Array of arguments) passed to script.
          * @return int it will exit with 0 if sucess, orwise it is not 0 exit.
          */
-        public function run( $argv = array() ) {
-            $this->console->info("## zphar " . ZPHAR_VERSION);
-            $this->console->info("# Packaging the code as phar format");
+        public function run($argv = array())
+        {
+            $this->console->info("# ZPHAR " . ZPHAR_VERSION);
+            $this->console->info("# Packaging the code as phar");
             $this->console->info("# Author: peter.ziv@hotmail.com ");
             $this->console->info("");
-            do {
-                $this->check();
-                $args = $this->parseArgs($argv);
-                $dir = $this->requiredParam($args, 'dir');
+
+            //Start to execute package as phar
+            $this->check();
+            $parser = new \ZKit\console\utility\CmdParser();
+            $rs = $parser->parse($argv);
+            if (0 == $rs) {
+                $dir = $this->getParam($parser, 'dir');
                 $this->checkDir($dir);
-                $packageName = $this->requiredParam($args, 'name');
-                $defaultIndex = $this->requiredParam($args, 'default');
-                $argCompress  = isset($args['compress'])?$args['compress']:'';
+                $packageName = $this->getParam($parser, 'name');
+                $defaultIndex = $this->getParam($parser, 'default');
+                $compressTmp = $parser->requiredParam('compress');
+                $argCompress = isset($compressTmp) ? $compressTmp : '';
                 $compress = $this->getCompress($argCompress);
 
                 $this->package($dir, $packageName, $compress, $defaultIndex);
-            } while (false);
-            exit(0);
+            }
+
+            exit($rs);
         }
-        
-        private function checkDir(&$dir){
+
+        private function getParam($parser, $key)
+        {
+            $value = $parser->requiredParam($key);
+            if (is_null($value)) {
+                $this->error(5, '--' . $key);
+            }
+            return $value;
+        }
+
+        private function checkDir(&$dir)
+        {
             if (!is_dir($dir)) {
-                $dir = getcwd() . DIRECTORY_SEPARATOR . $dir;                                
+                $dir = getcwd() . DIRECTORY_SEPARATOR . $dir;
                 if (!is_dir($dir)) {
                     $this->error(6, $dir);
                 }
@@ -104,52 +125,12 @@ namespace ZKit\Console {
             }
         }
 
-        private function requiredParam($param,$key){
-            if (!isset($param[$key])) {
-                $this->error(5,'--'.$key);
-            }
-            return $param[$key];
-        }
-
-        private function findKey($param, &$key) {
-            switch ($param) {
-                case '--dir':
-                    $key = 'dir';
-                    break;
-                case '--default':
-                    $key = 'default';
-                    break;
-                case '--name':
-                    $key = 'name';
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        private function parseArgs($argv = array()) {
-            array_shift($argv);
-            if (empty($argv[0])) {
-                $this->error(1);
-            }
-            $key = null;
-            $args = array();
-            while($param = array_shift($argv)){
-                if(is_null($key)){
-                    $this->findKey($param, $key);
-                    continue;
-                }
-                if ('--' === substr($param, 2)) {
-                    $this->error(2, $key . ' ' . $param);
-                    break;
-                }
-                $args[$key] = $param;
-                $key = null;
-            }
-            return $args;
-        }
-
-        private function error($errCode, $additional='') {
+        /**
+		 * print message by error code, and exit with this error code.
+         * @param int $errCode error code
+		 */
+        private function error($errCode, $additional = '')
+        {
             $errs = array(
                -1 => 'UNKNOWN',
                 0 => 'SUCCESS',
@@ -166,9 +147,9 @@ namespace ZKit\Console {
             }
             $this->console->error($errs[$errCode] . $additional);
 
-            $this->info();
+            $this->console->info('');
+            $this->help();
             exit($errCode);
         }
-
     }
 }

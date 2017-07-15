@@ -53,7 +53,7 @@ set location=%~dp0
 @php "%location%zphar.phar" %*
 ```
 
-The command can be simplified as :
+When you add this bat script in the environment, the command can be simplified as :
 
 ```powershell
 zphar --name a.phar --default default.php --dir MyFoder

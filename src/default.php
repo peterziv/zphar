@@ -6,11 +6,10 @@
  * @author Peter (peter.ziv@hotmail.com)
  * @copyright (c) 2016, Peter
  * @date Oct 12, 2016
- * 
+ *
  */
 date_default_timezone_set('PRC');
-require_once __DIR__.'/PharPackage.php';
-use ZKit\Console\PharPackage;
+require_once __DIR__ . '/PharPackage.php';
 
-$a = new PharPackage();
+$a = new \ZKit\console\zphar\PharPackage();
 $a->run( $argv );
